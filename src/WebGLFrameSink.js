@@ -369,19 +369,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			}
 
 			if (formatUpdate) {
-				var setupTexturePosition = function(buffer, location, texWidth) {
+				var setupTexturePosition = function(buffer, location, texWidth, yFactor) {
 					// Warning: assumes that the stride for Cb and Cr is the same size in output pixels
 					var textureX0 = format.cropLeft / texWidth;
 					var textureX1 = (format.cropLeft + format.cropWidth) / texWidth;
 					var textureY0 = (format.cropTop + format.cropHeight) / format.height;
 					var textureY1 = format.cropTop / format.height;
 					var textureRectangle = new Float32Array([
-						textureX0, textureY0,
-						textureX1, textureY0,
-						textureX0, textureY1,
-						textureX0, textureY1,
-						textureX1, textureY0,
-						textureX1, textureY1
+						textureX0, textureY0 * yFactor,
+						textureX1, textureY0 * yFactor,
+						textureX0, textureY1 * yFactor,
+						textureX0, textureY1 * yFactor,
+						textureX1, textureY0 * yFactor,
+						textureX1, textureY1 * yFactor
 					]);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -390,15 +390,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 				setupTexturePosition(
 					lumaPositionBuffer,
 					lumaPositionLocation,
-					buffer.y.stride);
+					buffer.y.stride,
+          1);
 				setupTexturePosition(
 					chromaPositionBuffer,
 					chromaPositionLocation,
-					buffer.u.stride * format.width / format.chromaWidth);
+					buffer.u.stride * format.width / format.chromaWidth,
+          1);
         setupTexturePosition(
 					contentPositionBuffer,
 					contentPositionLocation,
-					buffer.c.stride);
+					buffer.c.stride,
+          -1);
 			}
 
 			// Create or update the textures...
