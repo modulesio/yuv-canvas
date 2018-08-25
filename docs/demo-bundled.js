@@ -1,125 +1,14 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 module.exports = {
-  vertex: "precision lowp float;\n\nattribute vec2 aPosition;\nattribute vec2 aLumaPosition;\nattribute vec2 aChromaPosition;\nvarying vec2 vLumaPosition;\nvarying vec2 vChromaPosition;\nvoid main() {\n    gl_Position = vec4(aPosition, 0, 1);\n    vLumaPosition = aLumaPosition;\n    vChromaPosition = aChromaPosition;\n}\n",
-  fragment: "// inspired by https://github.com/mbebenita/Broadway/blob/master/Player/canvas.js\n\nprecision lowp float;\n\nuniform sampler2D uTextureY;\nuniform sampler2D uTextureCb;\nuniform sampler2D uTextureCr;\nvarying vec2 vLumaPosition;\nvarying vec2 vChromaPosition;\nvoid main() {\n   // Y, Cb, and Cr planes are uploaded as LUMINANCE textures.\n   float fY = texture2D(uTextureY, vLumaPosition).x;\n   float fCb = texture2D(uTextureCb, vChromaPosition).x;\n   float fCr = texture2D(uTextureCr, vChromaPosition).x;\n\n   // Premultipy the Y...\n   float fYmul = fY * 1.1643828125;\n\n   // And convert that to RGB!\n   gl_FragColor = vec4(\n     fYmul + 1.59602734375 * fCr - 0.87078515625,\n     fYmul - 0.39176171875 * fCb - 0.81296875 * fCr + 0.52959375,\n     fYmul + 2.017234375   * fCb - 1.081390625,\n     1\n   );\n}\n",
+  vertex: "precision lowp float;\n\nattribute vec2 aPosition;\nattribute vec2 aLumaPosition;\nattribute vec2 aChromaPosition;\nattribute vec2 aContentPosition;\nvarying vec2 vLumaPosition;\nvarying vec2 vChromaPosition;\nvarying vec2 vContentPosition;\nvoid main() {\n    gl_Position = vec4(aPosition, 0, 1);\n    vLumaPosition = aLumaPosition;\n    vChromaPosition = aChromaPosition;\n    vContentPosition = aContentPosition;\n}\n",
+  fragment: "// inspired by https://github.com/mbebenita/Broadway/blob/master/Player/canvas.js\n\nprecision lowp float;\n\nuniform sampler2D uTextureY;\nuniform sampler2D uTextureCb;\nuniform sampler2D uTextureCr;\nuniform sampler2D uContent;\nvarying vec2 vLumaPosition;\nvarying vec2 vChromaPosition;\nvarying vec2 vContentPosition;\nvoid main() {\n   // Y, Cb, and Cr planes are uploaded as LUMINANCE textures.\n   float fY = texture2D(uTextureY, vLumaPosition).x;\n   float fCb = texture2D(uTextureCb, vChromaPosition).x;\n   float fCr = texture2D(uTextureCr, vChromaPosition).x;\n   vec4 c = texture2D(uContent, vContentPosition);\n\n   // Premultipy the Y...\n   float fYmul = fY * 1.1643828125;\n\n   // And convert that to RGB!\n   gl_FragColor = vec4(\n     fYmul + 1.59602734375 * fCr - 0.87078515625,\n     fYmul - 0.39176171875 * fCb - 0.81296875 * fCr + 0.52959375,\n     fYmul + 2.017234375   * fCb - 1.081390625,\n     1\n   );\n   gl_FragColor.rgb = (gl_FragColor.rgb * (1.0 - c.a)) + (c.rgb * c.a);\n}\n",
   vertexStripe: "precision lowp float;\n\nattribute vec2 aPosition;\nattribute vec2 aTexturePosition;\nvarying vec2 vTexturePosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 0, 1);\n    vTexturePosition = aTexturePosition;\n}\n",
   fragmentStripe: "// extra 'stripe' texture fiddling to work around IE 11's poor performance on gl.LUMINANCE and gl.ALPHA textures\n\nprecision lowp float;\n\nuniform sampler2D uStripe;\nuniform sampler2D uTexture;\nvarying vec2 vTexturePosition;\nvoid main() {\n   // Y, Cb, and Cr planes are mapped into a pseudo-RGBA texture\n   // so we can upload them without expanding the bytes on IE 11\n   // which doesn't allow LUMINANCE or ALPHA textures\n   // The stripe textures mark which channel to keep for each pixel.\n   // Each texture extraction will contain the relevant value in one\n   // channel only.\n\n   float fLuminance = dot(\n      texture2D(uStripe, vTexturePosition),\n      texture2D(uTexture, vTexturePosition)\n   );\n\n   gl_FragColor = vec4(fLuminance, fLuminance, fLuminance, 1);\n}\n"
 };
 
 },{}],2:[function(require,module,exports){
-
-(function() {
-  "use strict";
-
-  var YUVBuffer = require('yuv-buffer'),
-    YUVCanvas = require('./../src/yuv-canvas.js');
-
-  var canvas = document.querySelector('canvas'),
-    yuvCanvas = YUVCanvas.attach(canvas),
-    format,
-    frame,
-    sourceData = {},
-    sourceFader = {
-      y: 1,
-      u: 1,
-      v: 1
-    };
-
-  function setupFrame() {
-    format = YUVBuffer.format({
-      width: 640,
-      height: 480,
-      chromaWidth: 320,
-      chromaHeight: 240
-    });
-    frame = YUVBuffer.frame(format);
-  }
-
-  // Rasterize a loaded image and get at its RGBA bytes.
-  // We'll use this in sample to get brightnesses from grayscale images.
-  function extractImageData(image) {
-    var canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth,
-    canvas.height = image.naturalHeight;
-
-    var context = canvas.getContext('2d');
-    context.drawImage(image, 0, 0);
-    return context.getImageData(0, 0, canvas.width, canvas.height)
-  }
-
-  // In this example we have separate images with Y, U, and V plane data.
-  // For each plane, we copy the grayscale values into the target YUVPlane
-  // object's data, applying a per-plane multiplier which is manipulable
-  // by the user.
-  function copyBrightnessToPlane(imageData, plane, width, height, multiplier) {
-    // Because we're doing multiplication that may wrap, use the browser-optimized
-    // Uint8ClampedArray instead of the default Uint8Array view.
-    var clampedBytes = new Uint8ClampedArray(plane.bytes.buffer, plane.bytes.offset, plane.bytes.byteLength);
-    for (var y = 0; y < height; y++) {
-      for (var x = 0; x < width; x++) {
-        clampedBytes[y * plane.stride + x] = imageData.data[y * width * 4 + x * 4] * multiplier;
-      }
-    }
-  }
-
-  function setupSources() {
-    function setup(index) {
-      var image = document.getElementById(index + 'plane'),
-        fader = document.getElementById(index + 'fader');
-
-      function doit() {
-        sourceData[index] = extractImageData(image);
-        updateFrame();
-      }
-      if (image.naturalWidth) {
-        doit();
-      } else {
-        image.addEventListener('load', doit);
-      }
-
-      fader.addEventListener('input', function() {
-        sourceFader[index] = fader.value;
-        updateFrame();
-      })
-    }
-    setup('y');
-    setup('u');
-    setup('v');
-  }
-
-  function updateFrame() {
-    // Copy data in!
-    if (sourceData.y) {
-      copyBrightnessToPlane(sourceData.y, frame.y, format.width, format.height, sourceFader.y);
-    }
-    if (sourceData.u) {
-      copyBrightnessToPlane(sourceData.u, frame.u, format.chromaWidth, format.chromaHeight, sourceFader.u);
-    }
-    if (sourceData.v) {
-      copyBrightnessToPlane(sourceData.v, frame.v, format.chromaWidth, format.chromaHeight, sourceFader.v);
-    }
-
-    yuvCanvas.drawFrame(frame);
-  }
-
-  function setupBenchmark() {
-    document.getElementById('benchmark').addEventListener('click', function() {
-     var rounds = 1000,
-       start = Date.now();
-     for (var i = 0; i < rounds; i++) {
-       yuvCanvas.drawFrame(frame);
-     }
-     var delta = (Date.now() - start) / 1000;
-     var fps = rounds / delta;
-     document.getElementById('fps').innerText = fps + 'fps';
-    });
-  }
-
-  setupFrame();
-  setupSources();
-  setupBenchmark();
-
-})();
+window.YUVBuffer = require('yuv-buffer'),
+window.YUVCanvas = require('./../src/yuv-canvas.js');
 
 },{"./../src/yuv-canvas.js":9,"yuv-buffer":3}],3:[function(require,module,exports){
 /*
@@ -947,19 +836,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			}
 
 			if (formatUpdate) {
-				var setupTexturePosition = function(buffer, location, texWidth) {
+				var setupTexturePosition = function(buffer, location, texWidth, yFactor) {
 					// Warning: assumes that the stride for Cb and Cr is the same size in output pixels
 					var textureX0 = format.cropLeft / texWidth;
 					var textureX1 = (format.cropLeft + format.cropWidth) / texWidth;
 					var textureY0 = (format.cropTop + format.cropHeight) / format.height;
 					var textureY1 = format.cropTop / format.height;
 					var textureRectangle = new Float32Array([
-						textureX0, textureY0,
-						textureX1, textureY0,
-						textureX0, textureY1,
-						textureX0, textureY1,
-						textureX1, textureY0,
-						textureX1, textureY1
+						textureX0, textureY0 * yFactor,
+						textureX1, textureY0 * yFactor,
+						textureX0, textureY1 * yFactor,
+						textureX0, textureY1 * yFactor,
+						textureX1, textureY0 * yFactor,
+						textureX1, textureY1 * yFactor
 					]);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -968,15 +857,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 				setupTexturePosition(
 					lumaPositionBuffer,
 					lumaPositionLocation,
-					buffer.y.stride);
+					buffer.y.stride,
+          1);
 				setupTexturePosition(
 					chromaPositionBuffer,
 					chromaPositionLocation,
-					buffer.u.stride * format.width / format.chromaWidth);
+					buffer.u.stride * format.width / format.chromaWidth,
+          1);
         setupTexturePosition(
 					contentPositionBuffer,
 					contentPositionLocation,
-					buffer.c.stride);
+					buffer.c.stride,
+          -1);
 			}
 
 			// Create or update the textures...
