@@ -91,6 +91,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		var stripeLocation, unpackTextureLocation;
 		var lumaPositionBuffer, lumaPositionLocation;
 		var chromaPositionBuffer, chromaPositionLocation;
+		var contentPositionBuffer, contentPositionLocation;
 
 		function createOrReuseTexture(name) {
 			if (!textures[name]) {
@@ -181,6 +182,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					data // data!
 				);
 			}
+		}
+
+    function uploadTexture2(name, width, height, data) {
+			var texture = createOrReuseTexture(name);
+			gl.activeTexture(gl.TEXTURE0);
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0, // mip level
+        gl.RGBA, // internal format
+        width,
+        height,
+        0, // border
+        gl.RGBA, // format
+        gl.UNSIGNED_BYTE, //type
+        data // data!
+      );
 		}
 
 		function unpackTexture(name, width, height) {
@@ -322,6 +345,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			lumaPositionLocation = gl.getAttribLocation(program, 'aLumaPosition');
 			chromaPositionBuffer = gl.createBuffer();
 			chromaPositionLocation = gl.getAttribLocation(program, 'aChromaPosition');
+      contentPositionBuffer = gl.createBuffer();
+			contentPositionLocation = gl.getAttribLocation(program, 'aContentPosition');
 		}
 
 		/**
@@ -376,6 +401,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			uploadTexture('uTextureY', buffer.y.stride, format.height, buffer.y.bytes);
 			uploadTexture('uTextureCb', buffer.u.stride, format.chromaHeight, buffer.u.bytes);
 			uploadTexture('uTextureCr', buffer.v.stride, format.chromaHeight, buffer.v.bytes);
+			uploadTexture2('uContent', buffer.c.stride, format.contentHeight, buffer.c.bytes);
 
 			if (WebGLFrameSink.stripe) {
 				// Unpack the textures after upload to avoid blocking on GPU
@@ -391,6 +417,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			attachTexture('uTextureY', gl.TEXTURE0, 0);
 			attachTexture('uTextureCb', gl.TEXTURE1, 1);
 			attachTexture('uTextureCr', gl.TEXTURE2, 2);
+			attachTexture('uContent', gl.TEXTURE3, 3);
 
 			// Set up geometry
 			gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -405,6 +432,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			gl.bindBuffer(gl.ARRAY_BUFFER, chromaPositionBuffer);
 			gl.enableVertexAttribArray(chromaPositionLocation);
 			gl.vertexAttribPointer(chromaPositionLocation, 2, gl.FLOAT, false, 0, 0);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, contentPositionBuffer);
+			gl.enableVertexAttribArray(contentPositionLocation);
+			gl.vertexAttribPointer(contentPositionLocation, 2, gl.FLOAT, false, 0, 0);
 
 			// Aaaaand draw stuff.
 			gl.drawArrays(gl.TRIANGLES, 0, rectangle.length / 2);
