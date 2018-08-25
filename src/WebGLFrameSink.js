@@ -395,6 +395,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					chromaPositionBuffer,
 					chromaPositionLocation,
 					buffer.u.stride * format.width / format.chromaWidth);
+        setupTexturePosition(
+					contentPositionBuffer,
+					contentPositionLocation,
+					buffer.c.stride);
 			}
 
 			// Create or update the textures...
