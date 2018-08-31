@@ -391,17 +391,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					lumaPositionBuffer,
 					lumaPositionLocation,
 					buffer.y.stride,
-          y => y);
+          function(y) { return y; }
+        );
 				setupTexturePosition(
 					chromaPositionBuffer,
 					chromaPositionLocation,
 					buffer.u.stride * format.width / format.chromaWidth,
-          y => y);
+          function(y) { return y; }
+        );
         setupTexturePosition(
 					contentPositionBuffer,
 					contentPositionLocation,
 					buffer.c.stride,
-          y => 1 - y);
+          function(y) { return 1 - y; }
+        );
 			}
 
 			// Create or update the textures...
