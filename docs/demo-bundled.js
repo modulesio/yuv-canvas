@@ -843,12 +843,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					var textureY0 = (format.cropTop + format.cropHeight) / format.height;
 					var textureY1 = format.cropTop / format.height;
 					var textureRectangle = new Float32Array([
-						textureX0, textureY0 * yFactor,
-						textureX1, textureY0 * yFactor,
-						textureX0, textureY1 * yFactor,
-						textureX0, textureY1 * yFactor,
-						textureX1, textureY0 * yFactor,
-						textureX1, textureY1 * yFactor
+						textureX0, yFactor(textureY0),
+						textureX1, yFactor(textureY0),
+						textureX0, yFactor(textureY1),
+						textureX0, yFactor(textureY1),
+						textureX1, yFactor(textureY0),
+						textureX1, yFactor(textureY1)
 					]);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -858,17 +858,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 					lumaPositionBuffer,
 					lumaPositionLocation,
 					buffer.y.stride,
-          1);
+          function(y) { return y; }
+        );
 				setupTexturePosition(
 					chromaPositionBuffer,
 					chromaPositionLocation,
 					buffer.u.stride * format.width / format.chromaWidth,
-          1);
+          function(y) { return y; }
+        );
         setupTexturePosition(
 					contentPositionBuffer,
 					contentPositionLocation,
 					buffer.c.stride,
-          -1);
+          function(y) { return 1 - y; }
+        );
 			}
 
 			// Create or update the textures...
